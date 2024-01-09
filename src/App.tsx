@@ -1,53 +1,45 @@
-import { useCallback } from "react";
+import { useMemo, useState } from "react";
 
-import { useDataEnhancementPlugin } from "@firecms/data_enhancement";
-
-import { User as FirebaseUser } from "firebase/auth";
-import { Authenticator, FirebaseCMSApp } from "firecms";
+import { GoogleAuthProvider } from "firebase/auth";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import { BrowserRouter as Router } from "react-router-dom";
 
 import "typeface-rubik";
 import "@fontsource/ibm-plex-mono";
 
-import { firebaseConfig } from "./firebase-config.ts";
-import { usersCollection } from "./collections/users.tsx";
-import { initializeApp } from "firebase/app";
 import {
-  collection,
-  doc,
-  getDoc,
-  getFirestore,
-  setDoc,
-} from "firebase/firestore";
-import { pageCollection } from "./collections/pages.tsx";
-import { AppProvider } from "./lib/context.tsx";
-import { settingsCollection } from "./collections/settings.tsx";
+  CircularProgressCenter,
+  createCMSDefaultTheme,
+  FirebaseAuthController,
+  FirebaseLoginView,
+  FireCMS,
+  ModeControllerProvider,
+  NavigationRoutes,
+  Scaffold,
+  SideDialogs,
+  SnackbarProvider,
+  useBuildModeController,
+  useFirebaseAuthController,
+  useFirebaseStorageSource,
+  useFirestoreDataSource,
+  useInitialiseFirebase,
+  useValidateAuthenticator,
+} from "firecms";
+import { firebaseConfig } from "./firebase-config";
+import DynamicCollections from "./collections/dynamicCollections";
+import { AppProvider } from "./lib/context";
+import { useDataEnhancementPlugin } from "@firecms/data_enhancement";
+import { usersCollection } from "./collections/users";
 
+const DEFAULT_SIGN_IN_OPTIONS = [GoogleAuthProvider.PROVIDER_ID];
+
+/**
+ * This is an example of how to use the components provided by FireCMS for
+ * a better customisation.
+ * @constructor
+ */
 export default function App() {
-  const myAuthenticator: Authenticator<FirebaseUser> = useCallback(
-    async ({ user, authController }) => {
-      if (user?.uid == null) return false;
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      const collectionRef = collection(db, "users");
-      const docRef = doc(collectionRef, user?.uid);
-      if (user?.metadata.creationTime == user?.metadata.lastSignInTime) {
-        // New User - Add to users collection
-        await setDoc(docRef, {
-          identifier: user?.email,
-          role: "user",
-        });
-
-        // Do not allow cms login
-        return false;
-      }
-      // User exists - Check role
-      else if (await getDoc(docRef).then((doc) => doc.data()?.role != "admin"))
-        return false;
-      return true;
-    },
-    []
-  );
-
+  const signInOptions = DEFAULT_SIGN_IN_OPTIONS;
   const dataEnhancementPlugin = useDataEnhancementPlugin({
     // Paths that will be enhanced
     getConfigForPath: ({ path }) => {
@@ -55,16 +47,154 @@ export default function App() {
     },
   });
 
+  const {
+    firebaseApp,
+    firebaseConfigLoading,
+    configError,
+    firebaseConfigError,
+  } = useInitialiseFirebase({ firebaseConfig });
+
+  const authController: FirebaseAuthController = useFirebaseAuthController({
+    firebaseApp,
+    signInOptions,
+  });
+
+  const dataSource = useFirestoreDataSource({
+    firebaseApp,
+    // You can add your `FirestoreTextSearchController` here
+  });
+
+  const storageSource = useFirebaseStorageSource({ firebaseApp });
+
+  const modeController = useBuildModeController();
+  const theme = useMemo(
+    () => createCMSDefaultTheme({ mode: modeController.mode }),
+    []
+  );
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
+  const { authLoading, canAccessMainView, notAllowedError } =
+    useValidateAuthenticator({
+      authController,
+      authentication: async (props) => {
+        if (props.user?.uid == null) return false;
+        if (
+          props.user?.metadata.creationTime ==
+          props.user?.metadata.lastSignInTime
+        ) {
+          // New User - Add to users collection
+          props.dataSource.saveEntity({
+            path: "users",
+            collection: usersCollection,
+            entityId: props.user.uid,
+            values: {
+              identifier: props.user.email,
+              role: "user",
+            },
+            status: "new",
+          });
+
+          // Do not allow cms login
+          return false;
+        }
+        // User exists - Check role
+        else {
+          const res = props.dataSource.fetchEntity({
+            path: "users",
+            collection: usersCollection,
+            entityId: props.user.uid,
+          });
+          const user = await res;
+          if (user.values?.role == "admin") {
+            props.authController.setExtra({
+              role: "admin",
+            });
+            return true;
+          } else if (user.values?.role == "editor") {
+            props.authController.setExtra({
+              role: "editor",
+            });
+            return true;
+          }
+        }
+        return false;
+      },
+      dataSource,
+      storageSource,
+    });
+
+  if (configError) {
+    return <div> {configError} </div>;
+  }
+
+  if (firebaseConfigError) {
+    return (
+      <div>
+        It seems like the provided Firebase config is not correct. If you are
+        using the credentials provided automatically by Firebase Hosting, make
+        sure you link your Firebase app to Firebase Hosting.
+      </div>
+    );
+  }
+
+  if (firebaseConfigLoading || !firebaseApp) {
+    return <CircularProgressCenter />;
+  }
+
   return (
-    // Wrapin app with the Context provider
-    <AppProvider>
-      <FirebaseCMSApp
-        name={"Flow Apps"}
-        plugins={[dataEnhancementPlugin]}
-        authentication={myAuthenticator}
-        collections={[pageCollection, usersCollection, settingsCollection]}
-        firebaseConfig={firebaseConfig}
-      />
-    </AppProvider>
+    <Router>
+      <SnackbarProvider>
+        <ModeControllerProvider value={modeController}>
+          <FireCMS
+            plugins={[dataEnhancementPlugin]}
+            authController={authController}
+            collections={
+              canAccessMainView
+                ? (props) => DynamicCollections(props, setCollectionsLoading)
+                : []
+            }
+            dataSource={dataSource}
+            storageSource={storageSource}
+            entityLinkBuilder={({ entity }) =>
+              `https://console.firebase.google.com/project/${firebaseApp.options.projectId}/firestore/data/${entity.path}/${entity.id}`
+            }
+          >
+            {({ context, loading }) => {
+              let component;
+              if (loading || collectionsLoading) {
+                component = <CircularProgressCenter />;
+              } else if (!canAccessMainView) {
+                component = (
+                  <FirebaseLoginView
+                    allowSkipLogin={false}
+                    signInOptions={signInOptions}
+                    firebaseApp={firebaseApp}
+                    authController={authController}
+                  />
+                );
+              } else {
+                component = (
+                  <AppProvider>
+                    <Scaffold
+                      logo={import.meta.env.VITE_SITELOGO}
+                      name={"Edraak Partners Program"}
+                    >
+                      <NavigationRoutes />
+                      <SideDialogs />
+                    </Scaffold>
+                  </AppProvider>
+                );
+              }
+
+              return (
+                <ThemeProvider theme={theme}>
+                  <CssBaseline />
+                  {component}
+                </ThemeProvider>
+              );
+            }}
+          </FireCMS>
+        </ModeControllerProvider>
+      </SnackbarProvider>
+    </Router>
   );
 }

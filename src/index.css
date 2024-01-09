@@ -1,5 +1,7 @@
-:root {
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400;500;600;700;800;900&display=swap");
 
+:root {
   color-scheme: light dark;
 
   font-synthesis: none;
@@ -7,6 +9,35 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  --font-playfair: "Playfair Display", serif;
+  --font-raleway: "Raleway", sans-serif;
+}
+
+#puck-frame {
+  background-color: #fff;
+}
+
+[role="tabpanel"] > .Puck {
+  position: relative;
+}
+
+[role="tabpanel"] > .Puck > div {
+  height: calc(100vh - 70px);
+}
+
+.Puck {
+  color-scheme: light;
+}
+
+.Puck > div {
+  position: absolute;
+}
+
+.PuckFieldsContainer input,
+.PuckFieldsContainer select,
+.PuckFieldsContainer textarea {
+  color: inherit;
 }
 
 body {

@@ -1,15 +1,8 @@
-import React, {
-  ReactNode,
-  createContext,
-  forwardRef,
-  useCallback,
-  useEffect,
-} from "react";
+import React, { ReactNode, createContext, forwardRef, useEffect } from "react";
 import { useImmerReducer } from "use-immer";
 
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from "../firebase-config";
-import { getDownloadURL, getStorage, list, ref } from "firebase/storage";
 
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -20,8 +13,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import ImageList from "@mui/material/ImageList";
 import ImageListItem from "@mui/material/ImageListItem";
 import ImageListItemBar from "@mui/material/ImageListItemBar";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { collection, doc, getDoc, getFirestore } from "firebase/firestore";
+import { ThemeProvider } from "@mui/material/styles";
+import { edraakTheme } from "./mui-theme";
+import { useDataSource } from "firecms";
+import { settingsCollection } from "../collections/settings";
 
 export type AppState = {
   gallery: { name: string; url: string; width?: number; height?: number }[];
@@ -127,6 +122,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     },
     initialState
   );
+  const dataSource = useDataSource();
 
   useEffect(() => {
     async function getInitailProps() {
@@ -148,31 +144,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       //   })),
       // });
 
-      const db = getFirestore(app);
-      const collectionRef = collection(db, "settings");
-      const docRef = doc(collectionRef, "pageIdSlugMap");
-      const data = getDoc(docRef);
-      const response = await data;
-      if (response.exists())
+      // const db = getFirestore(app);
+      // const collectionRef = collection(db, "settings");
+      // const docRef = doc(collectionRef, "pageIdSlugMap");
+      // const data = getDoc(docRef);
+      // const response = await data;
+
+      // if (response.exists())
+      //   dispatch({
+      //     type: "SET_PAGE_ID_SLUG_MAP",
+      //     payload: response.data().data,
+      //   });
+      const data = await dataSource.fetchEntity({
+        path: "settings",
+        collection: settingsCollection,
+        entityId: "pageIdSlugMap",
+      });
+
+      if (data && data.values)
         dispatch({
           type: "SET_PAGE_ID_SLUG_MAP",
-          payload: response.data().data,
+          payload: data.values.data as {
+            [key: string]: { parent: string; slug: string };
+          },
         });
-      // console.log(response.data());
       dispatch({ type: "SET_LOADING", payload: false });
     }
     if (state.loading) getInitailProps();
   }, []);
 
-  const theme = createTheme({
-    palette: {
-      mode: "dark",
-    },
-  });
-
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider theme={edraakTheme}>
         <Dialog
           open={state.isModalOpen}
           onClose={() => dispatch({ type: "SET_MODAL", payload: false })}

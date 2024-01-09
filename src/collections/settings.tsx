@@ -12,12 +12,10 @@ export const settingsCollection = buildCollection<Settings>({
   icon: "Settings",
   group: "Administration",
   customId: true,
-  permissions: ({ authController, user }) => ({
-    read: true,
-    edit: true,
-    create: true,
-    // delete: true,
-  }),
+  permissions: ({ authController, user }) => {
+    const isAdmin = authController.extra?.role == "admin";
+    return { read: isAdmin, edit: isAdmin, create: isAdmin, delete: isAdmin };
+  },
   properties: {
     data: {
       name: "data",

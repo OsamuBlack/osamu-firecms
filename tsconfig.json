@@ -15,11 +15,15 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "strict": true,
+    "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "paths": {
+    "@/*": ["./*"],
+    "@/puckConfig": ["./puckConfig/*"]
+  },
+  "include": ["src", "puckConfig"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

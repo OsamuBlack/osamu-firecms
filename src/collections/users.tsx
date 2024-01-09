@@ -11,13 +11,10 @@ export const usersCollection = buildCollection<User>({
   path: "users",
   icon: "Person",
   group: "Administration",
-  
-  permissions: ({ authController, user }) => ({
-    read: true,
-    edit: true,
-    create: false,
-    delete: false,
-  }),
+  permissions: ({ authController, user }) => {
+    const isAdmin = authController.extra?.role == "admin";
+    return { read: isAdmin, edit: isAdmin, create: isAdmin, delete: isAdmin };
+  },
   properties: {
     identifier: {
       name: "Identifier",
@@ -31,7 +28,8 @@ export const usersCollection = buildCollection<User>({
       enumValues: {
         admin: "Admin",
         user: "User",
-      }
+        editor: "Editor",
+      },
     },
   },
 });

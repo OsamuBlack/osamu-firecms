@@ -1,5 +1,6 @@
 {
     "hosting": {
+        "site": "https://edraakFirecms.com",
         "public": "dist",
         "ignore": [
             "firebase.json",
