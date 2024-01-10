@@ -1,4 +1,6 @@
 /node_modules
+/.firebase
+/dist
 .env
 firebase.json
 .firebaserc

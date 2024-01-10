@@ -1,12 +1,6 @@
-## FireCMS starter template
+## Firecms Flow App
 
-Welcome to FireCMS!
-
-This is a starter template for your next project. It includes the basic
-configuration to get you started.
-
-In order to run this project, you will need to create a Firebase project,
-create a web app and copy the configuration to the `firebase-config.ts`.
+Welcome to FireCMS Flow App!
 
 Then simply run:
 
@@ -25,5 +19,26 @@ project name. Then run:
 yarn build
 ```
 
+### Deploying the project
+
+#### Install the firebase tools globally
+```bash
+yarn add -g firebase-tools
+
+```
+
+```bash
+firebase login
+```
+
+```bash
+firebase init
+```
+
+```bash
+firebase deploy --project <id-of-the-project-from-firebase-console
+```
+
 > Note: this may not work if you have set up your Firebase hosting with 
 > a custom config.
+> Make sure to add a `.env` file with the `VITE_SITEURL` and `VITE_SITELOGO` to it.
