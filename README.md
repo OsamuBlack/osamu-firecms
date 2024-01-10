@@ -36,9 +36,10 @@ firebase init
 ```
 
 ```bash
-firebase deploy --project <id-of-the-project-from-firebase-console
+firebase deploy --project [id-of-the-project-from-firebase-console]
 ```
 
-> Note: this may not work if you have set up your Firebase hosting with 
+> Note: This may not work if you have set up your Firebase hosting with 
 > a custom config.
-> Make sure to add a `.env` file with the `VITE_SITEURL` and `VITE_SITELOGO` to it.
+
+Make sure to add a `.env` file with the `VITE_SITEURL` and `VITE_SITELOGO` to it.
