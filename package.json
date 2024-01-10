@@ -1,14 +1,14 @@
 {
-  "name": "firecms-starter",
+  "name": "edraak-firecms",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "deploy": "yarn run build && firebase deploy --project edraak-flow-apps"
+    "deploy": "yarn run build && firebase deploy --project edraak-firecms"
   },
   "dependencies": {
     "@emotion/react": "^11.11.0",

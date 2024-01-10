@@ -160,7 +160,7 @@ export default function App() {
           >
             {({ context, loading }) => {
               let component;
-              if (loading || collectionsLoading) {
+              if (loading) {
                 component = <CircularProgressCenter />;
               } else if (!canAccessMainView) {
                 component = (
