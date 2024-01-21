@@ -8,6 +8,7 @@ import "typeface-rubik";
 import "@fontsource/ibm-plex-mono";
 
 import {
+  Authenticator,
   CircularProgressCenter,
   createCMSDefaultTheme,
   FirebaseAuthController,
@@ -29,7 +30,7 @@ import { firebaseConfig } from "./firebase-config";
 import DynamicCollections from "./collections/dynamicCollections";
 import { AppProvider } from "./lib/context";
 import { useDataEnhancementPlugin } from "@firecms/data_enhancement";
-import { usersCollection } from "./collections/users";
+import { User, usersCollection } from "./collections/users";
 
 const DEFAULT_SIGN_IN_OPTIONS = [GoogleAuthProvider.PROVIDER_ID];
 
@@ -69,7 +70,7 @@ export default function App() {
   const modeController = useBuildModeController();
   const theme = useMemo(
     () => createCMSDefaultTheme({ mode: modeController.mode }),
-    []
+    [modeController.mode]
   );
   const [collectionsLoading, setCollectionsLoading] = useState(true);
   const { authLoading, canAccessMainView, notAllowedError } =
@@ -82,16 +83,18 @@ export default function App() {
           props.user?.metadata.lastSignInTime
         ) {
           // New User - Add to users collection
-          props.dataSource.saveEntity({
+          await props.dataSource.saveEntity({
             path: "users",
             collection: usersCollection,
             entityId: props.user.uid,
             values: {
               identifier: props.user.email,
-              role: "user",
             },
             status: "new",
           });
+
+          props.authController.authError =
+            "You do not have permissions to access this site.";
 
           // Do not allow cms login
           return false;
@@ -104,18 +107,20 @@ export default function App() {
             entityId: props.user.uid,
           });
           const user = await res;
-          if (user.values?.role == "admin") {
+          if (user.values?.isAdmin) {
             props.authController.setExtra({
               role: "admin",
             });
             return true;
-          } else if (user.values?.role == "editor") {
+          } else if (user.values?.isEditor) {
             props.authController.setExtra({
               role: "editor",
             });
             return true;
           }
         }
+        props.authController.authError =
+          "You do not have permissions to access this site.";
         return false;
       },
       dataSource,
@@ -160,7 +165,7 @@ export default function App() {
           >
             {({ context, loading }) => {
               let component;
-              if (loading) {
+              if (loading || authLoading) {
                 component = <CircularProgressCenter />;
               } else if (!canAccessMainView) {
                 component = (
@@ -169,8 +174,11 @@ export default function App() {
                     signInOptions={signInOptions}
                     firebaseApp={firebaseApp}
                     authController={authController}
+                    notAllowedError={notAllowedError}
                   />
                 );
+              } else if (collectionsLoading) {
+                component = <CircularProgressCenter />;
               } else {
                 component = (
                   <AppProvider>

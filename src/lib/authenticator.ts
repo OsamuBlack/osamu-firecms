@@ -21,7 +21,7 @@ const CustomAuthenticator: Authenticator<FirebaseUser> = useCallback(
         },
         status: "new",
       });
-
+      
       // Do not allow cms login
       return false;
     }

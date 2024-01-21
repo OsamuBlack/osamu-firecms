@@ -18,10 +18,34 @@ export type Page = {
   title: string;
   slug: string;
   status: string;
+  visibility: string;
+  redirects: {
+    loggedIn: string;
+    anonymous: string;
+  };
   tags: string[];
   category: string;
   content: object;
-  metadata: object;
+  metadata: {
+    description: string;
+    keywords: string[];
+    canonical: string;
+    openGraph: {
+      title: string;
+      type: string;
+      description: string;
+      image: string;
+    };
+    twitter: {
+      title: string;
+      description: string;
+      image: string;
+    };
+    redirect: {
+      type: string;
+      url: string;
+    };
+  };
   parent: EntityReference;
   dateCreated: Date;
   dateUpdated: Date;
@@ -73,6 +97,7 @@ export const pageCollection = buildCollection<Page>({
           props.context.values.slug,
           props.context.values.parent?.id
         );
+        
         const sideEntityController = useSideEntityController();
         return (
           <Box
@@ -125,16 +150,16 @@ export const pageCollection = buildCollection<Page>({
         );
       },
     },
-    parent: (props) =>
-      buildProperty({
+    parent: (props) =>  
+    buildProperty({
         name: "Parent",
         dataType: "reference",
         forceFilter: {
           status: ["==", "published"],
         },
-
         path: "pages",
         previewProperties: ["title", "slug"],
+        
       }),
     status: {
       name: "Status",
@@ -146,6 +171,41 @@ export const pageCollection = buildCollection<Page>({
         private: "Private",
         draft: "Draft",
         published: "Published",
+      },
+    },
+    visibility: (props) => ({
+      name: "Visibility",
+      defaultValue: "public",
+      validation: { required: true },
+      disabled: props.values.status != "published" && {
+        disabledMessage: "The page must be published to be visible",
+        clearOnDisabled: true,
+      },
+      dataType: "string",
+      description: "Should this page be visible in the website",
+      enumValues: {
+        public: "Public",
+        loggedIn: "Logged In Only",
+        editor: "Editor Only",
+        admin: "Admin Only",
+      },
+    }),
+    redirects: {
+      name: "Redirects",
+      dataType: "map",
+      properties: {
+        loggedIn: {
+          name: "Logged In",
+          dataType: "string",
+          description: "Redirect logged in users to another page",
+          clearable: true,
+        },
+        anonymous: {
+          name: "Anonymous",
+          dataType: "string",
+          description: "Redirect anonymous users to another page",
+          clearable: true,
+        },
       },
     },
     dateCreated: buildProperty({
@@ -189,12 +249,33 @@ export const pageCollection = buildCollection<Page>({
         },
         keywords: {
           name: "Keywords",
-          dataType: "string",
-          array: true,
+          dataType: "array",
+          of: {
+            dataType: "string",
+            name: "Keyword",
+          },
         },
         canonical: {
           name: "Canonical",
           dataType: "string",
+        },
+        redirect: {
+          name: "Redirect",
+          dataType: "map",
+          properties: {
+            type: {
+              name: "Type",
+              dataType: "string",
+              enumValues: {
+                permanent: "Permanent",
+                temporary: "Temporary",
+              },
+            },
+            url: {
+              name: "URL",
+              dataType: "string",
+            },
+          },
         },
         openGraph: {
           name: "Open Graph",
@@ -221,10 +302,9 @@ export const pageCollection = buildCollection<Page>({
             image: {
               name: "Image",
               dataType: "string",
-              config: {
-                storageMeta: {
-                  mediaType: "image",
-                },
+              storage: {
+                storagePath: "images",
+                acceptedFiles: ["image/*"],
               },
             },
           },
@@ -245,10 +325,9 @@ export const pageCollection = buildCollection<Page>({
             image: {
               name: "Image",
               dataType: "string",
-              config: {
-                storageMeta: {
-                  mediaType: "image",
-                },
+              storage: {
+                storagePath: "images",
+                acceptedFiles: ["image/*"],
               },
             },
           },

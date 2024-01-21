@@ -2,7 +2,9 @@ import { buildCollection, buildProperty, EntityReference } from "firecms";
 
 export type User = {
   identifier: string;
-  role: string;
+  email: string;
+  isAdmin: boolean;
+  isEditor: boolean;
 };
 
 export const usersCollection = buildCollection<User>({
@@ -17,19 +19,21 @@ export const usersCollection = buildCollection<User>({
   },
   properties: {
     identifier: {
-      name: "Identifier",
-      validation: { required: true },
+      name: "Firebase Identifier",
       dataType: "string",
     },
-    role: {
-      name: "Role",
-      validation: { required: true },
+    email: {
+      name: "Email",
       dataType: "string",
-      enumValues: {
-        admin: "Admin",
-        user: "User",
-        editor: "Editor",
-      },
+      clearable: true,
+    },
+    isAdmin: {
+      name: "isAdmin",
+      dataType: "boolean",
+    },
+    isEditor: {
+      name: "isEditor",
+      dataType: "boolean",
     },
   },
 });

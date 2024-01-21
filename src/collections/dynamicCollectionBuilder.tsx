@@ -15,6 +15,21 @@ export type dynamicField =
     }
   | {
       name: string;
+      type: "number";
+      description?: string;
+      fieldOptions?: {
+        max?: number;
+        min?: number;
+        lessThan?: number;
+        moreThan?: number;
+        positive?: boolean;
+        negative?: boolean;
+        integer?: boolean;
+      };
+      required?: boolean;
+    }
+  | {
+      name: string;
       type: "select";
       description?: string;
       fieldOptions?: {
@@ -101,6 +116,7 @@ export type dynamicCollectionBuilder = {
 function propertyOptionBuilder(
   type:
     | "text"
+    | "number"
     | "select"
     | "fileUpload"
     | "switch"
@@ -142,6 +158,43 @@ function propertyOptionBuilder(
         },
       };
       break;
+    case "number":
+      return {
+        name: "Number Field Options",
+        dataType: "map",
+        expanded: false,
+        properties: {
+          max: {
+            dataType: "number",
+            name: "Max",
+          },
+          min: {
+            dataType: "number",
+            name: "Min",
+          },
+          lessThan: {
+            dataType: "number",
+            name: "Less Than",
+          },
+          moreThan: {
+            dataType: "number",
+            name: "More Than",
+          },
+          positive: {
+            dataType: "boolean",
+            name: "Positive",
+          },
+          negative: {
+            dataType: "boolean",
+            name: "Negative",
+          },
+          integer: {
+            dataType: "boolean",
+            name: "Integer",
+          },
+        },
+      };
+      break;
     case "select":
       return {
         name: "Select Field Options",
@@ -175,41 +228,47 @@ function propertyOptionBuilder(
       };
       break;
     case "fileUpload":
-      {
-        return {
-          name: "File Upload Field Options",
-          dataType: "map",
-          expanded: false,
-          properties: {
-            fileName: {
+      return {
+        name: "File Upload Field Options",
+        dataType: "map",
+        expanded: false,
+        properties: {
+          fileName: {
+            dataType: "string",
+            defaultValue: "{entityId}/{file.ext}",
+            description:
+              "Do not change the default value unless unless you are confident that the file name will be unique.",
+          },
+          storagePath: {
+            dataType: "string",
+            name: "Storage Path",
+            validation: { required: true },
+            defaultValue: "uploads/{userId}",
+            description:
+              "Do not change the default value unless you know what permissions are available to each user.",
+          },
+          accecptedTypes: {
+            dataType: "array",
+            name: "Accepted Types",
+            description:
+              "All MIME types can be used with build-in support for image/*, video/*, audio/*. Leave empty to accept all types.",
+            of: {
               dataType: "string",
-              name: "Custom File Name",
-            },
-            storagePath: {
-              dataType: "string",
-              name: "Storage Path",
-              validation: { required: true },
-            },
-            accecptedTypes: {
-              dataType: "array",
-              name: "Accepted Types",
-              of: {
-                dataType: "string",
-                name: "Type",
-              },
-            },
-            maxSize: {
-              dataType: "number",
-              name: "Max Size",
-            },
-            metadata: {
-              dataType: "map",
-              keyValue: true,
-              name: "Metadata",
+              name: "Type",
             },
           },
-        };
-      }
+          maxSize: {
+            dataType: "number",
+            name: "Max Size",
+            description: "In Mbs",
+          },
+          metadata: {
+            dataType: "map",
+            keyValue: true,
+            name: "Metadata",
+          },
+        },
+      };
       break;
     case "switch":
       return {
@@ -305,6 +364,7 @@ const dynamicPropertyBuilder = ({
           ? isRepeat
             ? {
                 text: "Text",
+                number: "Number",
                 select: "Select",
                 fileUpload: "File Upload",
                 switch: "Switch",
@@ -313,6 +373,7 @@ const dynamicPropertyBuilder = ({
               }
             : {
                 text: "Text",
+                number: "Number",
                 select: "Select",
                 fileUpload: "File Upload",
                 switch: "Switch",
@@ -322,6 +383,7 @@ const dynamicPropertyBuilder = ({
               }
           : {
               text: "Text",
+              number: "Number",
               select: "Select",
               fileUpload: "File Upload",
               switch: "Switch",
@@ -395,13 +457,18 @@ export const DynamicCollectionBuilder =
       onDelete: ({ context }) => {
         context.navigation.refreshNavigation();
       },
+      onIdUpdate(idUpdateProps) {
+        return idUpdateProps.values.path || idUpdateProps.entityId;
+      },
     },
     properties: {
-      name: {
-        name: "Name",
-        dataType: "string",
-        description: "Name of the collection",
-        validation: { required: true },
+      name: (props) => {
+        return {
+          name: "Name",
+          dataType: "string",
+          description: "Name of the collection",
+          validation: { required: true },
+        };
       },
       singluarName: {
         name: "Singular Name",
@@ -482,29 +549,5 @@ export const DynamicCollectionBuilder =
           },
         },
       },
-      frontendSubmissions: ({ values }) => ({
-        name: "Frontend",
-        dataType: "map",
-        disabled: !(
-          values.permissions?.user?.create ||
-          values.permissions?.anonymous?.create
-        ) && {
-          clearOnDisabled: true,
-          disabledMessage:
-            "Frontend collection needs to be editable by users or anonymous users.",
-        },
-        properties: {
-          loggedInOnly: {
-            name: "Logged In Only",
-            dataType: "boolean",
-            description: "Only logged in users can access this collection.",
-          },
-          singleSubmission: {
-            name: "Single Submission",
-            dataType: "boolean",
-            description: "Only one response per user.",
-          },
-        },
-      }),
     },
   });

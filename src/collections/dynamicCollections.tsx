@@ -4,7 +4,6 @@ import {
   buildProperty,
   DataSource,
   EntityCollection,
-  EntityCollectionsBuilder,
   User,
 } from "firecms";
 
@@ -20,6 +19,7 @@ import { Dispatch, SetStateAction } from "react";
 
 const fieldNamesToTypeMap: {
   text: "string";
+  number: "number";
   select: "string";
   switch: "boolean";
   fileUpload: "string";
@@ -28,6 +28,7 @@ const fieldNamesToTypeMap: {
   repeat: "array";
 } = {
   text: "string",
+  number: "number",
   select: "string",
   switch: "boolean",
   fileUpload: "string",
@@ -36,7 +37,7 @@ const fieldNamesToTypeMap: {
   repeat: "array",
 };
 
-const DynamicFieldBuilder = (fields: dynamicField[]) => {
+const DynamicFieldBuilder = (fields: dynamicField[], userId: string) => {
   let properties = {};
   fields.forEach((field) => {
     switch (field.type) {
@@ -50,6 +51,21 @@ const DynamicFieldBuilder = (fields: dynamicField[]) => {
           email: field.fieldOptions?.email,
           url: field.fieldOptions?.url,
           markdown: field.fieldOptions?.markdown,
+        });
+        break;
+      case "number":
+        properties[field.name] = buildProperty({
+          name: field.name,
+          dataType: "number",
+          description: field.description,
+          validation: { required: field.required },
+          min: field.fieldOptions?.min,
+          max: field.fieldOptions?.max,
+          lessThan: field.fieldOptions?.lessThan,
+          moreThan: field.fieldOptions?.moreThan,
+          positive: field.fieldOptions?.positive,
+          negative: field.fieldOptions?.negative,
+          integer: field.fieldOptions?.integer,
         });
         break;
       case "select":
@@ -74,18 +90,23 @@ const DynamicFieldBuilder = (fields: dynamicField[]) => {
         }
         break;
       case "fileUpload":
-        properties[field.name] = buildProperty({
-          name: field.name,
-          dataType: "string",
-          description: field.description,
-          storage: {
-            storagePath: field.fieldOptions?.storagePath,
-            acceptedFiles: field.fieldOptions?.accecptedTypes,
-            fileName: field.fieldOptions?.fileName,
-            metadata: field.fieldOptions?.metadata,
-          },
-          validation: { required: field.required },
-        });
+        properties[field.name] = (props) =>
+          buildProperty({
+            name: field.name,
+            dataType: "string",
+            description: field.description,
+            storage: {
+              storagePath: field.fieldOptions?.storagePath.replace(
+                "{userId}",
+                userId
+              ),
+              acceptedFiles: field.fieldOptions?.accecptedTypes,
+              fileName: field.fieldOptions?.fileName,
+              metadata: field.fieldOptions?.metadata,
+              maxSize: field.fieldOptions?.maxSize * 1024 * 1024,
+            },
+            validation: { required: field.required },
+          });
         break;
       case "switch":
         properties[field.name] = buildProperty({
@@ -114,7 +135,7 @@ const DynamicFieldBuilder = (fields: dynamicField[]) => {
           name: field.name,
           dataType: "map",
           description: field.description,
-          properties: DynamicFieldBuilder(field.fieldOptions),
+          properties: DynamicFieldBuilder(field.fieldOptions, userId),
           validation: { required: field.required },
         });
         break;
@@ -126,7 +147,7 @@ const DynamicFieldBuilder = (fields: dynamicField[]) => {
           of: {
             dataType: fieldNamesToTypeMap[field.fieldOptions?.type],
             name: field.fieldOptions?.name,
-            properties: DynamicFieldBuilder([field.fieldOptions]),
+            properties: DynamicFieldBuilder([field.fieldOptions], userId),
           },
           validation: { required: field.required },
         });
@@ -153,10 +174,13 @@ const DynamicCollections = async (
     });
 
   const dynamicCollections = collections.map((collection) => {
-    const properties = DynamicFieldBuilder(collection.values.fields);
+    const properties = DynamicFieldBuilder(
+      collection.values.fields,
+      props.authController.user.uid
+    );
     return buildCollection({
       name: collection.values.name,
-      path: `${collection.values.path}`,
+      path: `dynamicCollections/${collection.values.path}/documents`,
       group: "Dynamic Collections",
       singularName: collection.values.singluarName,
       icon: collection.values.icon,
