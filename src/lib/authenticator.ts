@@ -17,11 +17,10 @@ const CustomAuthenticator: Authenticator<FirebaseUser> = useCallback(
         entityId: props.user.uid,
         values: {
           identifier: props.user.email,
-          role: "user",
         },
         status: "new",
       });
-      
+
       // Do not allow cms login
       return false;
     }
@@ -32,7 +31,7 @@ const CustomAuthenticator: Authenticator<FirebaseUser> = useCallback(
         collection: usersCollection,
         entityId: props.user.uid,
       });
-      if (await user.then((doc) => doc.values?.role == "admin")) return true;
+      if (await user.then((doc) => doc.values?.isAdmin)) return true;
     }
     return false;
   },
