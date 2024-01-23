@@ -110,11 +110,13 @@ export default function App() {
           if (user.values?.isAdmin) {
             props.authController.setExtra({
               role: "admin",
+              content: user.values.content
             });
             return true;
           } else if (user.values?.isEditor) {
             props.authController.setExtra({
               role: "editor",
+              content: user.values.content
             });
             return true;
           }

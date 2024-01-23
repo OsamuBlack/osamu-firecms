@@ -1,10 +1,19 @@
-import { buildCollection, buildProperty, EntityReference } from "firecms";
+import { Timestamp } from "firebase/firestore";
+import { buildCollection } from "firecms";
 
 export type User = {
   identifier: string;
   email: string;
   isAdmin: boolean;
   isEditor: boolean;
+  content: {
+    [colletionPath: string]: {
+      [documentId: string]: {
+        action: "read" | "edit" | "create" | "delete";
+        timestamp: Date;
+      };
+    };
+  };
 };
 
 export const usersCollection = buildCollection<User>({
@@ -34,6 +43,39 @@ export const usersCollection = buildCollection<User>({
     isEditor: {
       name: "isEditor",
       dataType: "boolean",
+    },
+    content: {
+      name: "Content",
+      dataType: "map",
+      keyValue: true,
+      // properties: {
+      //   collection: {
+      //     name: "Collection",
+      //     dataType: "map",
+      //     properties: {
+      //       document: {
+      //         name: "Document",
+      //         dataType: "map",
+      //         properties: {
+      //           action: {
+      //             name: "Action",
+      //             dataType: "string",
+      //             enumValues: {
+      //               read: "Read",
+      //               edit: "Edit",
+      //               create: "Create",
+      //               delete: "Delete",
+      //             },
+      //           },
+      //           timestamp: {
+      //             name: "Timestamp",
+      //             dataType: "date",
+      //           },
+      //         },
+      //       }
+      //     }
+      //   }
+      // }
     },
   },
 });

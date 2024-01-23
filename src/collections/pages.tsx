@@ -1,4 +1,4 @@
-import { useSideEntityController } from "firecms";
+import { ReferenceFieldBinding, useDataSource, useSideEntityController } from "firecms";
 
 import {
   buildCollection,
@@ -97,7 +97,7 @@ export const pageCollection = buildCollection<Page>({
           props.context.values.slug,
           props.context.values.parent?.id
         );
-        
+
         const sideEntityController = useSideEntityController();
         return (
           <Box
@@ -150,8 +150,8 @@ export const pageCollection = buildCollection<Page>({
         );
       },
     },
-    parent: (props) =>  
-    buildProperty({
+    parent: (props) =>
+      buildProperty({
         name: "Parent",
         dataType: "reference",
         forceFilter: {

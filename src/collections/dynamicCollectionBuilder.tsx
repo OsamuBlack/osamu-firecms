@@ -1,4 +1,4 @@
-import { buildCollection, buildProperties } from "firecms";
+import { buildCollection, buildProperties, buildProperty } from "firecms";
 
 export type dynamicField =
   | {
@@ -107,10 +107,15 @@ export type dynamicCollectionBuilder = {
     user: Permissions;
     anonymous: Permissions;
   };
-  frontendSubmissions?: {
-    loggedInOnly: boolean;
-    singleSubmission: boolean;
+  approvalsTable: {
+    enabled: boolean;
+    permissions: {
+      admin: Permissions;
+      editor: Permissions;
+    };
+    fields: dynamicField[];
   };
+  singleSubmission: boolean;
 };
 
 function propertyOptionBuilder(
@@ -129,6 +134,7 @@ function propertyOptionBuilder(
   name: string;
   dataType: "map" | "array";
   expanded: boolean;
+  defaultValue?: any;
   properties?: any;
   of?: any;
 } {
@@ -232,12 +238,17 @@ function propertyOptionBuilder(
         name: "File Upload Field Options",
         dataType: "map",
         expanded: false,
+        defaultValue: {
+          storagePath: "uploads/{userId}",
+          fileName: "{entityId}/{file.ext}",
+        },
         properties: {
           fileName: {
             dataType: "string",
             defaultValue: "{entityId}/{file.ext}",
             description:
               "Do not change the default value unless unless you are confident that the file name will be unique.",
+            name: "File Name",
           },
           storagePath: {
             dataType: "string",
@@ -261,6 +272,7 @@ function propertyOptionBuilder(
             dataType: "number",
             name: "Max Size",
             description: "In Mbs",
+            defaultValue: 5,
           },
           metadata: {
             dataType: "map",
@@ -345,6 +357,7 @@ const dynamicPropertyBuilder = ({
   dataType: "map";
   name: string;
   properties: any;
+  defaultValue?: any;
   expanded: boolean;
   previewAsTag: boolean;
 } => {
@@ -391,6 +404,10 @@ const dynamicPropertyBuilder = ({
             },
       previewAsTag: true,
     },
+    defaultValue: {
+      dataType: "string",
+      name: "Default Value",
+    },
     description: {
       dataType: "string",
       name: "Description",
@@ -410,6 +427,7 @@ const dynamicPropertyBuilder = ({
     dataType: "map",
     name: propertyValue?.name || "New Field",
     properties: properties,
+    defaultValue: propertyValue?.defaultValue,
     expanded: false,
     previewAsTag: false,
   };
@@ -490,6 +508,11 @@ export const DynamicCollectionBuilder =
         dataType: "string",
         description: "Material Icon Name",
       },
+      singleSubmission: {
+        name: "Single Submission",
+        dataType: "boolean",
+        defaultValue: false,
+      },
       fields: {
         name: "Fields",
         dataType: "array",
@@ -545,6 +568,54 @@ export const DynamicCollectionBuilder =
               edit: false,
               create: false,
               delete: false,
+            },
+          },
+        },
+      },
+      approvalsTable: {
+        name: "Approvals Table",
+        dataType: "map",
+        properties: {
+          enabled: {
+            name: "Enabled",
+            dataType: "boolean",
+            defaultValue: false,
+          },
+          permissions: {
+            name: "Approvals Permissions",
+            expanded: false,
+            dataType: "map",
+            properties: {
+              admin: {
+                name: "Admin",
+                dataType: "map",
+                properties: PermissionProperties(true),
+                defaultValue: {
+                  read: true,
+                  edit: true,
+                  create: true,
+                  delete: true,
+                },
+              },
+              editor: {
+                name: "Editor",
+                dataType: "map",
+                properties: PermissionProperties(true),
+                defaultValue: {
+                  read: true,
+                  edit: true,
+                  create: true,
+                  delete: true,
+                },
+              },
+            },
+          },
+          fields: {
+            name: "Fields",
+            dataType: "array",
+            validation: { required: true },
+            of: ({ propertyValue }) => {
+              return dynamicPropertyBuilder({ propertyValue });
             },
           },
         },
