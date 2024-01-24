@@ -4,3 +4,4 @@
 .env
 firebase.json
 .firebaserc
+/src/firebase-config.js
