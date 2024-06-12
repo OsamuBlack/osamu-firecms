@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+	function isAdminOrEditor() {
+    let user = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    return user.role == "admin" || user.role == "editor";
+  }
+  
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow write: if false;
+      allow read: if false;
+    }
+    
+    match /media/{document=*} {
+    	allow write: if isAdminOrEditor();
+    	allow read: if true;
+    }
+    
+    match /uploads/{userId}/{entityId=*} {
+    	allow read: if request.auth.uid == userId || isAdminOrEditor();
+      allow write: if request.auth.uid == userId || isAdminOrEditor();
+    }
+  }
+}

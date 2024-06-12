@@ -6,8 +6,7 @@ import {
 } from "firecms";
 import Button from "@mui/material/Button";
 import { Box, FormControl, FormLabel, Typography } from "@mui/material";
-import PagePreview from "../components/pagePreview.tsx";
-import { pageCollection } from "./pages.tsx";
+import { pageCollection } from "./pages copy.tsx";
 
 export type Revision = {
   content: object;
@@ -19,13 +18,6 @@ export const pageRevisionCollection = buildCollection<Revision>({
   name: "Revisions",
   singularName: "Revision",
   path: "revisions",
-  views: [
-    {
-      path: "preview",
-      name: "Preview",
-      Builder: PagePreview,
-    },
-  ],
   permissions: ({ authController, user }) => ({
     read: true,
     edit: true,

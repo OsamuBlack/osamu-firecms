@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function getUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return getUser().role == "admin";
+    }
+   
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /forms/{document=**} {
+      allow create: if true;
+    }
+     
+		match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId);
+      allow create: if request.auth != null && (request.auth.uid == userId);
+    }
+  }
+}

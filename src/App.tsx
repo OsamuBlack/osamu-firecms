@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Children, useMemo, useState } from "react";
 
 import { GoogleAuthProvider } from "firebase/auth";
 import { CssBaseline, ThemeProvider } from "@mui/material";
@@ -27,10 +27,11 @@ import {
   useValidateAuthenticator,
 } from "firecms";
 import { firebaseConfig } from "./firebase-config";
-import DynamicCollections from "./collections/dynamicCollections";
 import { AppProvider } from "./lib/context";
 import { useDataEnhancementPlugin } from "@firecms/data_enhancement";
-import { User, usersCollection } from "./collections/users";
+import { usersCollection } from "./collections/users";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { dynamicCollections } from "./lib/dynamicCollections";
 
 const DEFAULT_SIGN_IN_OPTIONS = [GoogleAuthProvider.PROVIDER_ID];
 
@@ -54,6 +55,11 @@ export default function App() {
     configError,
     firebaseConfigError,
   } = useInitialiseFirebase({ firebaseConfig });
+
+  const siteKey = import.meta.env.VITE_APPCHECK_KEY;
+  if (!siteKey) {
+    throw new Error("AppCheck key not provided");
+  }
 
   const authController: FirebaseAuthController = useFirebaseAuthController({
     firebaseApp,
@@ -107,16 +113,16 @@ export default function App() {
             entityId: props.user.uid,
           });
           const user = await res;
-          if (user.values?.isAdmin) {
+          if (user.values?.role == "admin") {
             props.authController.setExtra({
               role: "admin",
-              content: user.values.content
+              content: user.values.content,
             });
             return true;
-          } else if (user.values?.isEditor) {
+          } else if (user.values?.role == "editor") {
             props.authController.setExtra({
               role: "editor",
-              content: user.values.content
+              content: user.values.content,
             });
             return true;
           }
@@ -147,6 +153,13 @@ export default function App() {
     return <CircularProgressCenter />;
   }
 
+  const provider = new ReCaptchaV3Provider(siteKey);
+
+  const sdk = initializeAppCheck(firebaseApp, {
+    provider,
+    isTokenAutoRefreshEnabled: true,
+  });
+
   return (
     <Router>
       <SnackbarProvider>
@@ -156,7 +169,7 @@ export default function App() {
             authController={authController}
             collections={
               canAccessMainView
-                ? (props) => DynamicCollections(props, setCollectionsLoading)
+                ? (props) => dynamicCollections(props, setCollectionsLoading)
                 : []
             }
             dataSource={dataSource}
@@ -186,7 +199,7 @@ export default function App() {
                   <AppProvider>
                     <Scaffold
                       logo={import.meta.env.VITE_SITELOGO}
-                      name={"Edraak Partners Program"}
+                      name={import.meta.env.VITE_SITE_NAME}
                     >
                       <NavigationRoutes />
                       <SideDialogs />

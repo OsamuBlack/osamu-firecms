@@ -31,7 +31,7 @@ const CustomAuthenticator: Authenticator<FirebaseUser> = useCallback(
         collection: usersCollection,
         entityId: props.user.uid,
       });
-      if (await user.then((doc) => doc.values?.isAdmin)) return true;
+      if (await user.then((doc) => doc.values?.role == "admin")) return true;
     }
     return false;
   },

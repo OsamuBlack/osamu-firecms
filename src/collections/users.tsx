@@ -4,8 +4,7 @@ import { buildCollection } from "firecms";
 export type User = {
   identifier: string;
   email: string;
-  isAdmin: boolean;
-  isEditor: boolean;
+  role: "admin" | "editor";
   content: {
     [colletionPath: string]: {
       [documentId: string]: {
@@ -36,13 +35,13 @@ export const usersCollection = buildCollection<User>({
       dataType: "string",
       clearable: true,
     },
-    isAdmin: {
-      name: "isAdmin",
-      dataType: "boolean",
-    },
-    isEditor: {
-      name: "isEditor",
-      dataType: "boolean",
+    role: {
+      name: "Role",
+      dataType: "string",
+      enumValues: {
+        admin: "Admin",
+        editor: "Editor",
+      },
     },
     content: {
       name: "Content",
